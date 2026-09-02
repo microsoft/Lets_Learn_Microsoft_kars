@@ -1,0 +1,6 @@
+.evidence/
+.venv/
+rendered/
+config/aks.env
+__pycache__/
+*.pyc

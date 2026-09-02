@@ -1,0 +1,94 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: InferencePolicy
+metadata:
+  name: forge-inference
+  namespace: kars-system
+  labels:
+    kars.azure.com/sandbox: forge
+spec:
+  appliesTo:
+    sandboxName: forge
+  modelPreference:
+    primary:
+      provider: azure-openai
+      deployment: __FORGE_MODEL__
+  contentSafety:
+    requirePromptShields: false
+  tokenBudget:
+    perRequestTokens: 20000
+    dailyTokens: 100000
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: ToolPolicy
+metadata:
+  name: forge-workspace-tools
+  namespace: kars-system
+  labels:
+    kars.azure.com/sandbox: forge
+spec:
+  appliesTo:
+    tool: "*"
+    mcpServer: forge-workspace
+    sandboxMatchLabels:
+      kars.azure.com/sandbox: forge
+  agtProfile:
+    inline: |
+      version: "1.0"
+      agent: forge-default
+      policies:
+        - name: forge-allow-bounded-tools
+          type: capability
+          allowed_actions:
+            - "inference:chat_completions:*"
+            - "inference:responses:*"
+            - "inference:content_safety:*"
+            - "spawn:*"
+            - "mesh:*"
+            - "tool:workspace_get_task:*"
+            - "tool:workspace_read_file:*"
+            - "tool:workspace_search:*"
+            - "tool:workspace_apply_patch:*"
+            - "tool:workspace_run_test:*"
+            - "tool:workspace_get_diff:*"
+            - "tool:workspace_reset:*"
+          priority: 100
+  rateLimit:
+    rps: 2
+    burst: 20
+    window: 1m
+  approval:
+    mode: never
+  displayName: Forge bounded workspace tools
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: ToolPolicy
+metadata:
+  name: forge-toolpolicy
+  namespace: kars-system
+  labels:
+    kars.azure.com/parent: forge
+spec:
+  appliesTo:
+    tool: "*"
+    sandboxMatchLabels:
+      kars.azure.com/parent: forge
+  agtProfile:
+    inline: |
+      version: "1.0"
+      agent: forge-specialist
+      policies:
+        - name: forge-specialist-mesh-only
+          type: capability
+          allowed_actions:
+            - "inference:chat_completions:*"
+            - "inference:responses:*"
+            - "inference:content_safety:*"
+            - "mesh:*"
+          priority: 100
+  rateLimit:
+    rps: 2
+    burst: 20
+    window: 1m
+  approval:
+    mode: never
+  displayName: Forge specialist mesh-only tools

@@ -1,0 +1,14 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-byo-invalid
+  namespace: kars-system
+spec:
+  runtime:
+    kind: BYO
+    byo:
+      image: forge-byo-invalid:dev
+  sandbox:
+    isolation: standard
+  inferenceRef:
+    name: forge-inference

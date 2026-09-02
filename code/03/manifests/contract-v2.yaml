@@ -1,0 +1,62 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: InferencePolicy
+metadata:
+  name: forge-contract-inference
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/name: forge-contract
+    app.kubernetes.io/managed-by: code03-lab
+spec:
+  appliesTo:
+    sandboxName: forge-contract
+  modelPreference:
+    primary:
+      provider: azure-openai
+      deployment: __MODEL__
+  contentSafety:
+    requirePromptShields: false
+  tokenBudget:
+    perRequestTokens: 2048
+    dailyTokens: 8192
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-contract
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/name: forge-contract
+    app.kubernetes.io/managed-by: code03-lab
+spec:
+  runtime:
+    kind: OpenClaw
+    openclaw:
+      config:
+        agent:
+          model: azure/__MODEL__
+  agent:
+    instructions: >-
+      Contract revision v2. This Git-reviewed change proves that the controller
+      observes a new generation and reconciles the generated workload.
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: forge-contract-inference
+  networkPolicy:
+    defaultDeny: true
+    egressMode: Strict
+    allowedEndpoints: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi

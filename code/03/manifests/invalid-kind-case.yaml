@@ -1,0 +1,19 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: karsSandbox
+metadata:
+  name: forge-invalid-kind-case
+  namespace: kars-system
+spec:
+  runtime:
+    kind: OpenClaw
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: forge-contract-inference

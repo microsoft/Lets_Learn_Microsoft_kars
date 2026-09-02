@@ -1,0 +1,32 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-missing-policy
+  namespace: kars-system
+  labels:
+    kars.azure.com/lab: sandbox-boundaries
+spec:
+  runtime:
+    kind: OpenClaw
+    openclaw:
+      config:
+        agent:
+          model: azure/gpt-5.6-sol
+  agent:
+    instructions: >-
+      Boundary test: this sandbox must not start without its inference policy.
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: intentionally-missing-policy
+  networkPolicy:
+    defaultDeny: true
+    egressMode: Strict
+    allowedEndpoints: []

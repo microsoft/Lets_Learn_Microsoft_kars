@@ -1,0 +1,53 @@
+controller:
+  replicas: 1
+  byoStrict: true
+  extraEnv:
+    - name: LEADER_ELECTION_ENABLED
+      value: "false"
+    - name: KARS_PROVIDER
+      value: github-copilot
+    - name: COPILOT_GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: kars-copilot-creds
+          key: api-key
+
+inferenceRouter:
+  azure:
+    openai:
+      endpoint: https://api.githubcopilot.com
+      deploymentName: gpt-5.6-sol
+    contentSafety:
+      enabled: false
+    promptShields:
+      enabled: false
+
+meshPeer:
+  enabled: true
+  clusterName: your-aks-cluster
+
+monitoring:
+  enabled: true
+  containerInsights: true
+  prometheus:
+    enabled: true
+
+networkPolicy:
+  defaultDenyEgress: true
+  allowedEndpoints:
+    - name: github-api
+      host: api.github.com
+      port: 443
+      methods:
+        - GET
+    - name: github-copilot
+      host: api.githubcopilot.com
+      port: 443
+      methods:
+        - GET
+        - POST
+    - name: microsoft-package-proxy
+      host: packagefeedproxy.microsoft.io
+      port: 443
+      methods:
+        - GET

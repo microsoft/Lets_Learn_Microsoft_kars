@@ -1,0 +1,17 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-maf-shape-check
+  namespace: kars-system
+spec:
+  runtime:
+    kind: MicrosoftAgentFramework
+    microsoftAgentFramework:
+      language: python
+      agentCode:
+        oci:
+          image: ghcr.io/example/forge-maf-agent:v1
+  sandbox:
+    isolation: standard
+  inferenceRef:
+    name: forge-inference

@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: code03-policy-other
+  labels:
+    app.kubernetes.io/managed-by: code03-lab
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: InferencePolicy
+metadata:
+  name: forge-cross-namespace-inference
+  namespace: code03-policy-other
+  labels:
+    app.kubernetes.io/managed-by: code03-lab
+spec:
+  appliesTo:
+    sandboxName: forge-cross-namespace
+  modelPreference:
+    primary:
+      provider: azure-openai
+      deployment: __MODEL__
+  tokenBudget:
+    perRequestTokens: 512
+    dailyTokens: 1024
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-cross-namespace
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: code03-lab
+spec:
+  runtime:
+    kind: OpenClaw
+    openclaw:
+      config:
+        agent:
+          model: azure/__MODEL__
+  agent:
+    instructions: >-
+      This sandbox must remain Degraded because its policy exists only in
+      another namespace.
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: forge-cross-namespace-inference
+  networkPolicy:
+    defaultDeny: true
+    egressMode: Strict
+    allowedEndpoints: []

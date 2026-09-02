@@ -427,3 +427,8 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Local documentation and deployment artifacts
+.DS_Store
+_site/
+.azure/

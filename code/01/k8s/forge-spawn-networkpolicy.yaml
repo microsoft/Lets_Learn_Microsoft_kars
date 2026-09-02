@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: forge-spawn-apiserver
+  namespace: kars-forge
+  labels:
+    kars.azure.com/sandbox: forge
+spec:
+  podSelector:
+    matchLabels:
+      kars.azure.com/component: sandbox
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: __KUBE_API_IP__/32
+      ports:
+        - protocol: TCP
+          port: 443
+    - to:
+        - ipBlock:
+            cidr: __KUBE_API_ENDPOINT_IP__/32
+      ports:
+        - protocol: TCP
+          port: __KUBE_API_ENDPOINT_PORT__

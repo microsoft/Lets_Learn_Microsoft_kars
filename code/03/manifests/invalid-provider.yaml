@@ -1,0 +1,51 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: InferencePolicy
+metadata:
+  name: forge-invalid-provider-inference
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: code03-lab
+spec:
+  appliesTo:
+    sandboxName: forge-invalid-provider
+  modelPreference:
+    primary:
+      provider: azure-openai
+      deployment: intentionally-invalid-model
+  tokenBudget:
+    perRequestTokens: 256
+    dailyTokens: 512
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-invalid-provider
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: code03-lab
+spec:
+  runtime:
+    kind: OpenClaw
+    openclaw:
+      config:
+        agent:
+          model: azure/intentionally-invalid-model
+  agent:
+    instructions: >-
+      This sandbox demonstrates that provider deployment validity is checked
+      on inference, not by Kubernetes schema validation.
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: forge-invalid-provider-inference
+  networkPolicy:
+    defaultDeny: true
+    egressMode: Strict
+    allowedEndpoints: []

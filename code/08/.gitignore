@@ -1,0 +1,7 @@
+.evidence/
+.state/
+.venv/
+config/azure.env
+rendered/
+__pycache__/
+*.pyc

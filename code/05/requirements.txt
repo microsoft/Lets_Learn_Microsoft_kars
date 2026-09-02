@@ -1,0 +1,1 @@
+agent-framework-github-copilot==1.0.3

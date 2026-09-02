@@ -1,0 +1,55 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: InferencePolicy
+metadata:
+  name: forge-byo-inference
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: code05-lab
+spec:
+  appliesTo:
+    sandboxName: forge-byo-copilot-claw
+  modelPreference:
+    primary:
+      provider: azure-openai
+      deployment: gpt-5.6-sol
+  contentSafety:
+    requirePromptShields: false
+  tokenBudget:
+    perRequestTokens: 1024
+    dailyTokens: 4096
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-byo-copilot-claw
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: code05-lab
+spec:
+  runtime:
+    kind: BYO
+    byo:
+      image: forge-byo-copilot-claw:dev
+      contractVersion: v1
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: forge-byo-inference
+  networkPolicy:
+    defaultDeny: true
+    egressMode: Strict
+    allowedEndpoints: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi

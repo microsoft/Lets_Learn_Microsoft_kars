@@ -1,0 +1,200 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: InferencePolicy
+metadata:
+  name: forge-builder-inference
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/role: builder
+spec:
+  appliesTo:
+    sandboxName: forge-builder
+  modelPreference:
+    primary:
+      provider: azure-openai
+      deployment: __MODEL__
+  contentSafety:
+    requirePromptShields: false
+  tokenBudget:
+    perRequestTokens: 2048
+    dailyTokens: 8192
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: ToolPolicy
+metadata:
+  name: forge-builder-tools
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/role: builder
+spec:
+  appliesTo:
+    tool: "*"
+    sandboxMatchLabels:
+      forge.bytecraft.dev/role: builder
+  agtProfile:
+    inline: |
+      version: "1.0"
+      agent: forge-builder
+      policies:
+        - name: builder-bounded-workspace
+          type: capability
+          allowed_actions:
+            - "inference:chat_completions:*"
+            - "inference:responses:*"
+            - "mesh:*"
+            - "tool:workspace_get_task:*"
+            - "tool:workspace_read_file:*"
+            - "tool:workspace_search:*"
+            - "tool:workspace_apply_patch:*"
+            - "tool:workspace_run_test:*"
+            - "tool:workspace_get_diff:*"
+          priority: 100
+  rateLimit:
+    rps: 2
+    burst: 20
+    window: 1m
+  approval:
+    mode: never
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-builder
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/role: builder
+spec:
+  runtime:
+    kind: BYO
+    byo:
+      image: __IMAGE__
+      contractVersion: v1
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: forge-builder-inference
+  governance:
+    enabled: true
+    registryMode: local
+    trustThreshold: 700
+    toolPolicyRef:
+      name: forge-builder-tools
+  networkPolicy:
+    defaultDeny: true
+    egressMode: Strict
+    allowedEndpoints: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: InferencePolicy
+metadata:
+  name: forge-reviewer-inference
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/role: reviewer
+spec:
+  appliesTo:
+    sandboxName: forge-reviewer
+  modelPreference:
+    primary:
+      provider: azure-openai
+      deployment: __MODEL__
+  contentSafety:
+    requirePromptShields: false
+  tokenBudget:
+    perRequestTokens: 512
+    dailyTokens: 2048
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: ToolPolicy
+metadata:
+  name: forge-reviewer-tools
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/role: reviewer
+spec:
+  appliesTo:
+    tool: "*"
+    sandboxMatchLabels:
+      forge.bytecraft.dev/role: reviewer
+  agtProfile:
+    inline: |
+      version: "1.0"
+      agent: forge-reviewer
+      policies:
+        - name: reviewer-evidence-only
+          type: capability
+          allowed_actions:
+            - "inference:chat_completions:*"
+            - "inference:responses:*"
+            - "mesh:*"
+            - "tool:review_read_diff:*"
+            - "tool:review_read_test_evidence:*"
+            - "tool:review_submit_decision:*"
+          priority: 100
+  rateLimit:
+    rps: 1
+    burst: 5
+    window: 1m
+  approval:
+    mode: always
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: forge-reviewer
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/role: reviewer
+spec:
+  runtime:
+    kind: BYO
+    byo:
+      image: __IMAGE__
+      contractVersion: v1
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: forge-reviewer-inference
+  governance:
+    enabled: true
+    registryMode: local
+    trustThreshold: 800
+    toolPolicyRef:
+      name: forge-reviewer-tools
+  networkPolicy:
+    defaultDeny: true
+    egressMode: Strict
+    allowedEndpoints: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi

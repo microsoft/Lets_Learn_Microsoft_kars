@@ -1,0 +1,99 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: InferencePolicy
+metadata:
+  name: fabrikam-release-inference
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/stage: release
+spec:
+  appliesTo:
+    sandboxName: __SANDBOX__
+  modelPreference:
+    primary:
+      provider: azure-openai
+      deployment: __MODEL__
+  contentSafety:
+    requirePromptShields: false
+  tokenBudget:
+    perRequestTokens: 1024
+    dailyTokens: 4096
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: ToolPolicy
+metadata:
+  name: fabrikam-release-tools
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/stage: release
+spec:
+  appliesTo:
+    tool: "*"
+    sandboxMatchLabels:
+      forge.bytecraft.dev/stage: release
+  agtProfile:
+    inline: |
+      version: "1.0"
+      agent: fabrikam-release-pilot
+      policies:
+        - name: issue-to-pr-only
+          type: capability
+          allowed_actions:
+            - "inference:responses:*"
+            - "tool:inspect_release_contract:*"
+          priority: 100
+  rateLimit:
+    rps: 1
+    burst: 4
+    window: 1m
+  approval:
+    mode: never
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsSandbox
+metadata:
+  name: __SANDBOX__
+  namespace: kars-system
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    forge.bytecraft.dev/stage: release
+    forge.bytecraft.dev/customer: fabrikam
+spec:
+  runtime:
+    kind: MicrosoftAgentFramework
+    microsoftAgentFramework:
+      language: python
+      extraEnv:
+        SUPPORT_OWNER: __SUPPORT_OWNER__
+        TASK_CONCURRENCY_LIMIT: "__CONCURRENCY__"
+        DAILY_TASK_LIMIT: "__DAILY_LIMIT__"
+  sandbox:
+    isolation: enhanced
+    seccompProfile: kars-strict
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    writablePaths:
+      - /sandbox
+      - /tmp
+  inferenceRef:
+    name: fabrikam-release-inference
+  governance:
+    enabled: true
+    registryMode: local
+    trustThreshold: 800
+    toolPolicyRef:
+      name: fabrikam-release-tools
+  networkPolicy:
+    defaultDeny: true
+    egressMode: Strict
+    allowedEndpoints: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+  suspended: false

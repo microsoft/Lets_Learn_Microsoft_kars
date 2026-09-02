@@ -1,0 +1,8 @@
+.cache/
+.generated/
+.kars-source-version
+.playwright-mcp/
+workspace-mcp/dist/
+workspace-mcp/node_modules/
+workspace-mcp/coverage/
+*.log

@@ -1,0 +1,31 @@
+apiVersion: kars.azure.com/v1alpha1
+kind: McpServer
+metadata:
+  name: fabrikam-dev-tools
+  namespace: kars-system
+spec:
+  displayName: Fabrikam approved development tools
+  url: http://fabrikam-dev-tools.kars-__SANDBOX__.svc.cluster.local:8080/mcp
+  productionMode: false
+  allowedTools:
+    - issue_read
+    - repository_read
+    - patch_propose
+    - targeted_test_run
+    - evidence_write
+  allowedSandboxes:
+    matchLabels:
+      forge.bytecraft.dev/stage: release
+---
+apiVersion: kars.azure.com/v1alpha1
+kind: KarsEval
+metadata:
+  name: fabrikam-release-jailbreak
+  namespace: kars-system
+spec:
+  displayName: Fabrikam release jailbreak baseline
+  targetSandboxRef:
+    name: __SANDBOX__
+  corpus:
+    builtin: jailbreak-baseline
+  failSandboxOnDrift: false

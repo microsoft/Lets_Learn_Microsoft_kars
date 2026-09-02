@@ -1,0 +1,55 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: kars-byo-agent-exec-ban
+  labels:
+    app.kubernetes.io/name: kars
+    app.kubernetes.io/component: admission
+    app.kubernetes.io/part-of: code-06-security-operations
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    matchPolicy: Equivalent
+    namespaceSelector:
+      matchLabels:
+        kars.azure.com/isolated: strict
+      matchExpressions:
+        - key: kars.azure.com/break-glass
+          operator: NotIn
+          values:
+            - "true"
+    resourceRules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CONNECT
+        resources:
+          - pods/exec
+          - pods/attach
+        scope: "*"
+  matchConditions:
+    - name: target-is-byo-agent-runtime
+      expression: "!has(object.container) || object.container == '' || object.container == 'agent'"
+  validations:
+    - expression: "false"
+      message: >-
+        exec/attach into the BYO agent runtime is denied. Use approved application
+        and Router endpoints for diagnostics. Emergency override requires the
+        namespace label kars.azure.com/break-glass=true and an audited procedure.
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: kars-byo-agent-exec-ban-binding
+  labels:
+    app.kubernetes.io/name: kars
+    app.kubernetes.io/component: admission
+    app.kubernetes.io/part-of: code-06-security-operations
+spec:
+  policyName: kars-byo-agent-exec-ban
+  validationActions:
+    - Deny
+    - Audit
