@@ -25,11 +25,13 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-site.txt
       - run: pip install -r requirements-site.txt
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
       - name: Build site
         env:
-          BASE_PATH: /Lets_Learn_Microsoft_kars
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: python scripts/build_site.py
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
